@@ -1,13 +1,17 @@
 from bs4 import BeautifulSoup, SoupStrainer
-import requests
-import re
-import pandas as pd
 from datetime import datetime
+import pandas as pd
+import requests
+import sys
+import re
+
+URL     = sys.argv[1]
+DEPTH   = int(sys.argv[2])
 
 def getLinks(URL, depth, fileName):
     links = getLinksFrom(URL)
     linksTotal = links.copy()
-
+    
     if depth > 0:
         for _ in range(depth):
             tempDict = {}
@@ -41,5 +45,5 @@ def getLinksFrom(URL):
 
     return linksDict
 
-# example
-#getLinks("https://enttry.com.br/contato", 0, 'linksEnttry.xlsx')
+# Example
+getLinks(URL, DEPTH, 'links-collected.xlsx')
