@@ -1,6 +1,12 @@
 # Data Scraping (link collector)
 
-This script will collect all links from a given URL, and if depth is greater than zero, it also collect the links of collected links and so on. So after they retrieve all links, it'll save the links and the datetime it was collected in a excel file (.xlsx).
+## How it works?
+Should set two parameters: URL and DEPTH.
+
+Depth means how much further you want to go.
+If set to 0, it'll collect all hyperlinks from the given URL.
+If set to 1, it'll do the same for every hyperlink found before.
+and so on...
 
 ## How to run?
 1 - Clone the repository
