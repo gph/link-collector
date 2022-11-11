@@ -13,10 +13,31 @@ git clone https://github.com/gph/link-collector.git
 pip install bs4
 pip install requests
 pip install pandas
-pip install openpyxl
+```
+3 - How to import
+
+```
+from link_collector import LinkCollector
+
+links_collected = LinkCollector('https://example.com/', 1)
+
+# start collecting
+links_collected.collect()
+
+# print to console
+links_collected.print()
+
+# export to excel file
+links_collected.export()
+
+# get a list of links collected
+links_list = links_collected.list
+
+# get the dataframe
+dataframe = links_collected.dataframe
 ```
 
-3 - Run the application
+4 - How to run on console
 ```
 python .\link_collector.py https://example.com/ 0 
 ```
@@ -24,7 +45,7 @@ python .\link_collector.py https://example.com/ 0
 
 4 - The spreadsheet will be created inside the app directory.
 ```
-links-collected.xlsx
+links-collected_TIMESTAMP.xlsx
 ```
 
 <i>PS: I did it for a job interview assignment.</i>

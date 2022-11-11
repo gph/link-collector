@@ -1,49 +1,66 @@
-from bs4 import BeautifulSoup, SoupStrainer
-from datetime import datetime
-import pandas as pd
-import requests
-import sys
 import re
+import sys
+import requests
+from bs4 import BeautifulSoup
+from datetime import datetime 
+import pandas as pd
 
-URL     = sys.argv[1]
-DEPTH   = int(sys.argv[2])
+class LinkCollector:
 
-def getLinks(URL, depth, fileName):
-    links = getLinksFrom(URL)
-    linksTotal = links.copy()
+    def __init__(self, URL, DEPTH = 0):
+        self.URL = URL
+        self.DEPTH = DEPTH
+
+    def __scrapper(self, URL):
+        try:
+            response = requests.request('GET', URL)
+        except:
+            return {}  # if URL not work
+
+        content = response.content
+        soup = BeautifulSoup(content, 'html.parser', from_encoding='iso-8859-1')
+
+        links_found = {}
+
+        for item in soup.findAll('a', attrs={'href': re.compile("^http(s|)://")}):
+            link = item.get('href')
+            links_found[link] = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+
+        return links_found
     
-    if depth > 0:
-        for _ in range(depth):
-            tempDict = {}
-            
-            for link in links:
-                tempDict.update(getLinksFrom(link))
-                           
-            linksTotal.update(tempDict)
-            links = tempDict # links are set for the next iteration
+    def collect(self):
+        links = self.__scrapper(self.URL)
+        total_links_found = links.copy()
+        
+        if self.DEPTH > 0:
+            for _ in range(self.DEPTH):
+                temp_dict = {}
+
+                for link in links:
+                    temp_dict.update(self.__scrapper(link))
+
+                total_links_found.update(temp_dict)
+                links = temp_dict  # links are set for the next iteration
+        self.list = total_links_found.items()
+        self.dataframe = pd.DataFrame(self.list, columns=['link', 'time'])
     
-    dataframe = pd.DataFrame(linksTotal.items(), columns = ['link', 'atualTime'])
-    dataframe.to_excel(fileName, sheet_name="links", index=False)
-
-def getDateTime():
-    return datetime.now().strftime("%Y/%m/%d %H:%M:%S") # current date and time
-
-def getLinksFrom(URL):
-    try:
-        response = requests.request('GET', URL)
-    except:
-        return {} # if URL not work
-
-    content = response.content
-    soup = BeautifulSoup(content, 'html.parser')
+    def print(self):
+        print(self.dataframe.to_string(columns=None, header=True, index=True, formatters=None, index_names=True, max_rows=None, max_cols=None, show_dimensions=False, line_width=None))
     
-    linksDict = {}
+    # export data to excel file
+    def export(self):
+        self.dataframe.to_excel(f'link-collector_{datetime.now().strftime("%Y%m%d%H%M%S")}.xlsx', sheet_name="links", index=False)
 
-    for item in soup.findAll('a', attrs={'href': re.compile("^http(s|)://")}):
-        link = item.get('href')
-        linksDict[link] = getDateTime()
 
-    return linksDict
-
-# Example
-getLinks(URL, DEPTH, 'links-collected.xlsx')
+if __name__ == "__main__":
+    URL = sys.argv[1]
+    DEPTH = int(sys.argv[2])
+    
+    zeroDepth = LinkCollector(URL, DEPTH)
+    
+    # collect links
+    zeroDepth.collect()
+    # output data to console
+    zeroDepth.print()
+    # generate an excel file
+    zeroDepth.export()
