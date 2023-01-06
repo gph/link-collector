@@ -7,7 +7,7 @@ import requests
 from bs4 import BeautifulSoup
 
 
-def search_for_links(url) -> dict:
+def _search_for_links(url) -> dict:
     """ it returns a dictionary of links {URL: "datetime it's collected"} """
 
     try:
@@ -37,7 +37,7 @@ class LinkCollector:
         self.depth = depth
 
     def collect(self) -> None:
-        links = search_for_links(self.url)
+        links = _search_for_links(self.url)
         total_links_found = links.copy()
 
         if self.depth > 0:
@@ -45,7 +45,7 @@ class LinkCollector:
                 temp_dict = {}
 
                 for link in links:
-                    temp_dict.update(search_for_links(link))
+                    temp_dict.update(_search_for_links(link))
 
                 total_links_found.update(temp_dict)
                 links = temp_dict  # links are set for the next iteration
