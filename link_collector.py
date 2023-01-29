@@ -1,22 +1,14 @@
 import re
-import sys
 from datetime import datetime
 
-import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 
+""" simple script to retrieve links """
 
-def _search_for_links(url) -> dict:
-    """ it returns a dictionary of links {URL: "datetime it's collected"} """
 
-    try:
-        response = requests.request('GET', url)
-    except Exception as e:
-        print(f'{e}\nERROR: Probably wrong url... but it could be a connection problem!')
-        return {}
-
-    raw_content = response.content
+def _beautiful_filter(raw_content: str) -> dict:
+    """ Return a dict of links found from html content """
     content = BeautifulSoup(raw_content, 'html.parser', from_encoding='iso-8859-1')
 
     links_found = {}
@@ -29,56 +21,46 @@ def _search_for_links(url) -> dict:
     return links_found
 
 
-class LinkCollector:
+def search(url: {}, depth: int = 0) -> dict:
+    """ Return a dict of links found """
+    current_links = {}
 
-    def __init__(self, url: str, depth: int = 0):
-        self.links_list = {}
-        self.url = url
-        self.depth = depth
+    if type(url) is not dict:
+        url = {url: datetime.now().strftime("%Y/%m/%d %H:%M:%S")}
 
-    def collect(self) -> None:
-        links = _search_for_links(self.url)
-        total_links_found = links.copy()
+    for link in url.keys():
+        try:
+            r = requests.get(link)
+        except Exception as e:
+            print(f'ERROR: probably an invalid url {e}')
+            continue
 
-        if self.depth > 0:
-            for _ in range(self.depth):
-                temp_dict = {}
+        links_found = _beautiful_filter(r.content)
 
-                for link in links:
-                    temp_dict.update(_search_for_links(link))
+        for key, value in links_found.items():
+            # setdefault will only update new values
+            current_links.setdefault(key, value)
 
-                total_links_found.update(temp_dict)
-                links = temp_dict  # links are set for the next iteration
-        self.links_list = total_links_found.items()
+    # pass links collected before to a recursive_search
+    if depth > 0:
+        depth = depth - 1
+        result = search(url=current_links, depth=depth)
+        if result:
+            for key, value in result.items():
+                current_links.setdefault(key, value)
 
-    def __str__(self) -> str:
-        result = ''
-        for link in list(self.links_list):
-            result += f'{link[1]} {link[0]}\n'
-        return result
-
-    def export_to_excel(self) -> None:
-        filename = f'link-collector_{datetime.now().strftime("%Y%m%d%H%M%S")}.xlsx'
-        dataframe = pd.DataFrame(self.links_list, columns=['link', 'time'])
-        dataframe.to_excel(filename, sheet_name="links", index=False)
+    return current_links
 
 
 def main():
-    try:
-        url = sys.argv[1]
-        depth = int(sys.argv[2])
-    except IndexError:
-        print('Example: link_collector.py <URL> <DEPTH>')
-        return
+    url = 'https://example.com/'
 
-    zero_depth = LinkCollector(url, depth)
+    list_links_found = search(url=url, depth=2).items()
 
-    # collect links
-    zero_depth.collect()
-    # output data to console
-    print(zero_depth)
-    # generate an excel file
-    zero_depth.export_to_excel()
+    sorted_by_datetime = sorted(list_links_found, key=lambda d: d[1])
+
+    for link, dt in sorted_by_datetime:
+        print(f'{dt} {link}')
 
 
 if __name__ == "__main__":
